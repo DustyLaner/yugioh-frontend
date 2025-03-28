@@ -14,7 +14,6 @@ function App() {
   const [search, setSearch] = useState("");
   const [ownershipFilter, setOwnershipFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
-  const [cardCounter, setCardCounter] = useState(20);
 
   useEffect(() => {
     axios.get(`${backendURL}/cards`).then((res) => {
