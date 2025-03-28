@@ -12,7 +12,8 @@ function App() {
   const [displayedCards, setDisplayedCards] = useState([]);
   const [hasMore, setHasMore] = useState(true);
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("all");
+  const [ownershipFilter, setOwnershipFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
   const [cardCounter, setCardCounter] = useState(20);
 
   useEffect(() => {
@@ -24,7 +25,7 @@ function App() {
 
   useEffect(() => {
     applyFilters();
-  }, [search, filter, allCards]);
+  }, [search, ownershipFilter, typeFilter, allCards]);
 
   const applyFilters = () => {
     let filtered = allCards;
@@ -35,14 +36,16 @@ function App() {
       );
     }
 
-    if (filter === "owned") {
+    if (ownershipFilter === "owned") {
       filtered = filtered.filter((card) => card.owned > 0);
-    } else if (filter === "wishlist") {
-      filtered = filtered.filter((card) => card.wishlist);
-    } else if (filter === "Monster") {
+    } else if (ownershipFilter === "wishlist") {
+      filtered = filtered.filter((card) => card.owned === 0);
+    }
+
+    if (typeFilter === "Monster") {
       filtered = filtered.filter((card) => card.type.includes("Monster"));
-    } else if (filter !== "all") {
-      filtered = filtered.filter((card) => card.type === filter);
+    } else if (typeFilter !== "all") {
+      filtered = filtered.filter((card) => card.type === typeFilter);
     }
 
     setDisplayedCards(filtered.slice(0, cardCounter));
@@ -80,23 +83,29 @@ function App() {
         style={{ padding: "0.5rem", marginRight: "1rem", width: "250px" }}
       />
 
-      <select onChange={(e) => setFilter(e.target.value)} value={filter}>
-        <option value="all">Alle Karten</option>
-        <option value="owned">Besitze ich</option>
-        <option value="wishlist">Wunschliste</option>
-        <option value="Monster">Monsterkarten</option>
-        <option value="Normal Monster">  Normales Monster</option>
-        <option value="Effect Monster">  Effektmonster</option>
-        <option value="Fusion Monster">  Fusionsmonster</option>
-        <option value="Ritual Monster">  Ritualmonster</option>
-        <option value="XYZ Monster">  XYZ-Monster</option>
-        <option value="Synchro Monster">  Synchro-Monster</option>
-        <option value="Link Monster">  Link-Monster</option>
-        <option value="Spell Card">Zauberkarte</option>
-        <option value="Trap Card">Fallenkarte</option>
-      </select>
+      <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem", flexWrap: "wrap" }}>
+        <select onChange={(e) => setOwnershipFilter(e.target.value)} value={ownershipFilter}>
+          <option value="all">Alle Karten</option>
+          <option value="owned">Im Besitz</option>
+          <option value="wishlist">Nicht im Besitz</option>
+        </select>
 
-      <p style={{ marginTop: "1rem" }}>
+        <select onChange={(e) => setTypeFilter(e.target.value)} value={typeFilter}>
+          <option value="all">Alle Typen</option>
+          <option value="Monster">Monsterkarten (alle)</option>
+          <option value="Normal Monster">Normales Monster</option>
+          <option value="Effect Monster">Effektmonster</option>
+          <option value="Fusion Monster">Fusionsmonster</option>
+          <option value="Ritual Monster">Ritualmonster</option>
+          <option value="XYZ Monster">XYZ-Monster</option>
+          <option value="Synchro Monster">Synchro-Monster</option>
+          <option value="Link Monster">Link-Monster</option>
+          <option value="Spell Card">Zauberkarte</option>
+          <option value="Trap Card">Fallenkarte</option>
+        </select>
+      </div>
+
+      <p>
         Angezeigt: <strong>{displayedCards.length}</strong> von <strong>{allCards.length}</strong> Karten
       </p>
 
