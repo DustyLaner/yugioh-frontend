@@ -36,10 +36,15 @@ function App() {
     }
 
     if (filter === "owned") {
-      filtered = filtered.filter((card) => card.owned > 0);
-    } else if (filter === "wishlist") {
-      filtered = filtered.filter((card) => card.wishlist);
-    }
+		filtered = filtered.filter((card) => card.owned > 0);
+	} else if (filter === "wishlist") {
+		filtered = filtered.filter((card) => card.wishlist);
+	} else if (filter === "Monster") {
+		filtered = filtered.filter((card) => card.type.includes("Monster"));
+	} else if (filter !== "all") {
+		filtered = filtered.filter((card) => card.type === filter);
+	}
+
 
     setDisplayedCards(filtered.slice(0, cardCounter));
   };
@@ -77,10 +82,21 @@ function App() {
       />
 
       <select onChange={(e) => setFilter(e.target.value)} value={filter}>
-        <option value="all">Alle Karten</option>
-        <option value="owned">Besitze ich</option>
-        <option value="wishlist">Wunschliste</option>
-      </select>
+		<option value="all">Alle Karten</option>
+		<option value="owned">Besitze ich</option>
+		<option value="wishlist">Wunschliste</option>
+		<option value="Monster">Monsterkarten</option>
+		<option value="Normal Monster">  Normales Monster</option>
+		<option value="Effect Monster">  Effektmonster</option>
+		<option value="Fusion Monster">  Fusionsmonster</option>
+		<option value="Ritual Monster">  Ritualmonster</option>
+		<option value="XYZ Monster">  XYZ-Monster</option>
+		<option value="Synchro Monster">  Synchro-Monster</option>
+		<option value="Link Monster">  Link-Monster</option>
+		<option value="Spell Card">Zauberkarte</option>
+		<option value="Trap Card">Fallenkarte</option>
+	</select>
+
 
       <p style={{ marginTop: "1rem" }}>
         Angezeigt: <strong>{displayedCards.length}</strong> von <strong>{allCards.length}</strong> Karten
