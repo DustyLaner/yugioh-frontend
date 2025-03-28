@@ -14,6 +14,7 @@ function App() {
   const [search, setSearch] = useState("");
   const [ownershipFilter, setOwnershipFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [cardCounter, setCardCounter] = useState(20);
 
   useEffect(() => {
     axios.get(`${backendURL}/cards`).then((res) => {
@@ -48,17 +49,37 @@ function App() {
     }
 
     setDisplayedCards(filtered.slice(0, cardCounter));
+    setHasMore(filtered.length > cardCounter);
   };
 
   const fetchMoreCards = () => {
-    if (displayedCards.length >= allCards.length) {
-      setHasMore(false);
-      return;
+    let filtered = allCards;
+
+    if (search) {
+      filtered = filtered.filter((card) =>
+        card.name.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    if (ownershipFilter === "owned") {
+      filtered = filtered.filter((card) => card.owned > 0);
+    } else if (ownershipFilter === "wishlist") {
+      filtered = filtered.filter((card) => card.owned === 0);
+    }
+
+    if (typeFilter === "Monster") {
+      filtered = filtered.filter((card) => card.type.includes("Monster"));
+    } else if (typeFilter !== "all") {
+      filtered = filtered.filter((card) => card.type === typeFilter);
     }
 
     const nextCount = cardCounter + 20;
     setCardCounter(nextCount);
-    setDisplayedCards(allCards.slice(0, nextCount));
+    setDisplayedCards(filtered.slice(0, nextCount));
+
+    if (nextCount >= filtered.length) {
+      setHasMore(false);
+    }
   };
 
   const updateOwned = (cardId, newOwned) => {
