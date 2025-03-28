@@ -5,142 +5,111 @@ import { LazyLoadImage } from "react-lazy-load-image-component";
 import "react-lazy-load-image-component/src/effects/blur.css";
 import "./App.css";
 
+const backendURL = "https://yugioh-backend-hhhx.onrender.com";
+
 function App() {
   const [allCards, setAllCards] = useState([]);
-  const [filteredCards, setFilteredCards] = useState([]);
-  const [visibleCards, setVisibleCards] = useState([]);
+  const [displayedCards, setDisplayedCards] = useState([]);
   const [hasMore, setHasMore] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [typeFilter, setTypeFilter] = useState("Alle");
-  const [ownedFilter, setOwnedFilter] = useState("Alle");
-
-  const loadAmount = 20;
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("all");
+  const [cardCounter, setCardCounter] = useState(20);
 
   useEffect(() => {
-    axios.get("http://192.168.178.100:8000/cards")
-      .then((response) => {
-        const data = response.data.filter(card => card.image_url);
-        setAllCards(data);
-      })
-      .catch((error) => {
-        console.error("Fehler beim Laden der Karten:", error);
-      });
-  }, []);
+    axios.get(`${backendURL}/cards`).then((res) => {
+      setAllCards(res.data);
+      setDisplayedCards(res.data.slice(0, cardCounter));
+    });
+  }, [cardCounter]);
 
   useEffect(() => {
+    applyFilters();
+  }, [search, filter, allCards]);
+
+  const applyFilters = () => {
     let filtered = allCards;
 
-    if (searchTerm.trim() !== "") {
-      filtered = filtered.filter(card =>
-        card.name.toLowerCase().includes(searchTerm.toLowerCase())
+    if (search) {
+      filtered = filtered.filter((card) =>
+        card.name.toLowerCase().includes(search.toLowerCase())
       );
     }
 
-    if (typeFilter !== "Alle") {
-      filtered = filtered.filter(card =>
-        card.type.toLowerCase().includes(typeFilter.toLowerCase())
-      );
+    if (filter === "owned") {
+      filtered = filtered.filter((card) => card.owned > 0);
+    } else if (filter === "wishlist") {
+      filtered = filtered.filter((card) => card.wishlist);
     }
 
-    if (ownedFilter === "Besessen") {
-      filtered = filtered.filter(card => card.owned > 0);
-    } else if (ownedFilter === "Fehlend") {
-      filtered = filtered.filter(card => card.owned === 0);
-    }
-
-    setFilteredCards(filtered);
-    setVisibleCards(filtered.slice(0, loadAmount));
-    setHasMore(filtered.length > loadAmount);
-  }, [searchTerm, typeFilter, ownedFilter, allCards]);
-
-  const fetchMoreData = () => {
-    const next = filteredCards.slice(
-      visibleCards.length,
-      visibleCards.length + loadAmount
-    );
-
-    setVisibleCards(prev => [...prev, ...next]);
-
-    if (visibleCards.length + next.length >= filteredCards.length) {
-      setHasMore(false);
-    }
+    setDisplayedCards(filtered.slice(0, cardCounter));
   };
 
-  const updateOwned = (card, change) => {
-    const newOwned = Math.max(0, card.owned + change);
+  const fetchMoreCards = () => {
+    if (displayedCards.length >= allCards.length) {
+      setHasMore(false);
+      return;
+    }
 
-    axios.put(`http://192.168.178.100:8000/cards/${card.id}`, {
-      owned: newOwned
-    })
-    .then(() => {
-      const updated = allCards.map(c =>
-        c.id === card.id ? { ...c, owned: newOwned } : c
+    const nextCount = cardCounter + 20;
+    setCardCounter(nextCount);
+    setDisplayedCards(allCards.slice(0, nextCount));
+  };
+
+  const updateOwned = (cardId, newOwned) => {
+    axios.put(`${backendURL}/cards/${cardId}`, { owned: newOwned }).then(() => {
+      const updated = allCards.map((card) =>
+        card.id === cardId ? { ...card, owned: newOwned } : card
       );
       setAllCards(updated);
-    })
-    .catch(err => {
-      console.error("Fehler beim Aktualisieren der Karte:", err);
     });
   };
 
   return (
-    <div className="App">
+    <div className="App" style={{ backgroundColor: "#111", color: "white", padding: "1rem" }}>
       <h1>🃏 Yu-Gi-Oh! Kartenübersicht</h1>
 
-      <div className="filter-container">
-        <input
-          type="text"
-          placeholder="Nach Namen suchen..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+      <input
+        type="text"
+        placeholder="Karte suchen..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        style={{ padding: "0.5rem", marginRight: "1rem", width: "250px" }}
+      />
 
-        <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
-          <option value="Alle">Alle Typen</option>
-          <option value="Monster">Monster</option>
-          <option value="Spell">Spell</option>
-          <option value="Trap">Trap</option>
-        </select>
+      <select onChange={(e) => setFilter(e.target.value)} value={filter}>
+        <option value="all">Alle Karten</option>
+        <option value="owned">Besitze ich</option>
+        <option value="wishlist">Wunschliste</option>
+      </select>
 
-        <select value={ownedFilter} onChange={(e) => setOwnedFilter(e.target.value)}>
-          <option value="Alle">Alle Karten</option>
-          <option value="Besessen">Nur besessene</option>
-          <option value="Fehlend">Nur fehlende</option>
-        </select>
-      </div>
+      <p style={{ marginTop: "1rem" }}>
+        Angezeigt: <strong>{displayedCards.length}</strong> von <strong>{allCards.length}</strong> Karten
+      </p>
 
       <InfiniteScroll
-        dataLength={visibleCards.length}
-        next={fetchMoreData}
+        dataLength={displayedCards.length}
+        next={fetchMoreCards}
         hasMore={hasMore}
-        loader={<h4 style={{ color: "white" }}>Lade mehr Karten...</h4>}
-        endMessage={
-          <p style={{ textAlign: "center", color: "gray" }}>
-            <b>Alle Karten geladen 👌</b>
-          </p>
-        }
+        loader={<h4>Mehr Karten werden geladen...</h4>}
+        style={{ display: "flex", flexWrap: "wrap", justifyContent: "center" }}
       >
-        <div className="card-grid">
-          {visibleCards.map((card) => (
-            <div className="card" key={card.id}>
-              <LazyLoadImage
-                src={card.image_url}
-                alt={card.name}
-                effect="blur"
-                width="100%"
-                style={{ borderRadius: "8px" }}
-              />
-              <h3>{card.name}</h3>
-              <p>{card.type}</p>
-              <p><strong>ATK:</strong> {card.atk} | <strong>DEF:</strong> {card.def_}</p>
-              <div className="counter">
-                <button onClick={() => updateOwned(card, -1)} disabled={card.owned <= 0}>−</button>
-                <span>{card.owned} im Besitz</span>
-                <button onClick={() => updateOwned(card, 1)}>+</button>
-              </div>
-            </div>
-          ))}
-        </div>
+        {displayedCards.map((card) => (
+          <div key={card.id} style={{ border: "1px solid gray", borderRadius: "10px", padding: "1rem", margin: "1rem", backgroundColor: "#222", width: "200px" }}>
+            <LazyLoadImage
+              src={card.image_url}
+              alt={card.name}
+              effect="blur"
+              width="100%"
+            />
+            <h3>{card.name}</h3>
+            <p>Typ: {card.type}</p>
+            <p>{card.desc}</p>
+            <p>ATK: {card.atk} | DEF: {card.def_}</p>
+            <p>Besitz: {card.owned}</p>
+            <button onClick={() => updateOwned(card.id, card.owned + 1)}>+</button>
+            <button onClick={() => updateOwned(card.id, Math.max(0, card.owned - 1))}>-</button>
+          </div>
+        ))}
       </InfiniteScroll>
     </div>
   );
